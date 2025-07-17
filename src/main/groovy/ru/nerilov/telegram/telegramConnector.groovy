@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.24 *
+ * @version 2.5.25 *
  */
 
 /* Зависимости */
@@ -755,6 +755,28 @@ class TelegramDto {
             ChatMemberUpdated chatMember
             @JsonProperty("poll_answer")
             Poll.Answer pollAnswer
+            @JsonProperty("callback_query")
+            CallbackQuery callbackQuery
+
+            static class CallbackQuery {
+                @SuppressWarnings("unused")
+                String id
+                @SuppressWarnings("unused")
+                User from
+                @SuppressWarnings("unused")
+                Message message
+                @JsonProperty("inline_message_id")
+                @SuppressWarnings("unused")
+                String inlineMessageId
+                @JsonProperty("chat_instance")
+                @SuppressWarnings("unused")
+                String chatInstance
+                @SuppressWarnings("unused")
+                String data
+                @JsonProperty("game_short_name")
+                @SuppressWarnings("unused")
+                String gameShortName
+            }
 
             static class ChatMember {
                 @SuppressWarnings("unused")
