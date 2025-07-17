@@ -234,6 +234,20 @@ class TelegramConnector {
         }
 
         /**
+         * Удаление сообщения в чате
+         * @param chatId Идентификатор чата
+         * @param messageId Идентификатор сообщения
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void delete(
+                Long chatId,
+                Long messageId
+        ) {
+            Request.post("deleteMessage", [ chat_id: chatId, message_id: messageId ])
+        }
+
+        /**
          * Редактирование сообщения в чате
          * @param chatId Идентификатор чата
          * @param messageId Идентификатор сообщения
