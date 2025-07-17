@@ -1022,6 +1022,9 @@ class TelegramDto {
                 String text
                 @SuppressWarnings("unused")
                 String url
+                @SuppressWarnings("unused")
+                @JsonProperty("callback_data")
+                String callbackData
             }
 
             /** Разметка Inline-клавиатуры */
