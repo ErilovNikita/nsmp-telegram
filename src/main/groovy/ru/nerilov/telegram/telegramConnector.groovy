@@ -1134,7 +1134,6 @@ class TelegramDto {
         @JsonProperty("chat_id")
         @SuppressWarnings("unused")
         Long chatId
-        @JsonDeserialize(using = UnixTimeToDateDeserializer)
         @SuppressWarnings("unused")
         Date date
     }
