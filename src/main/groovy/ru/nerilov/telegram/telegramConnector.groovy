@@ -717,6 +717,7 @@ class TelegramDto {
         @JsonProperty("allowed_updates")
         List<String> allowedUpdates
 
+        /** DTO для типов обновлений */
         @SuppressWarnings("unused")
         static enum UpdateType {
             /** Новое входящие сообщения любого рода - текст, фотография, наклейка и т. д. */
@@ -861,6 +862,7 @@ class TelegramDto {
         @JsonProperty("accepted_gift_types")
         AcceptedGiftTypes acceptedGiftTypes
 
+        /** DTO для типов подарков */
         static class AcceptedGiftTypes{
             @JsonProperty("unlimited_gifts")
             Boolean unlimitedGifts
@@ -1071,6 +1073,7 @@ class TelegramDto {
         }
     }
 
+    /** DTO для опроса */
     static class Poll {
         @SuppressWarnings("unused")
         Long id
@@ -1122,4 +1125,17 @@ class TelegramDto {
         }
     }
 
+    /** DTO для логирования сообщения */
+    @SuppressWarnings("unused")
+    static class MessageLog {
+        @JsonProperty("message_id")
+        @SuppressWarnings("unused")
+        Long messageId
+        @JsonProperty("chat_id")
+        @SuppressWarnings("unused")
+        Long chatId
+        @JsonDeserialize(using = UnixTimeToDateDeserializer)
+        @SuppressWarnings("unused")
+        Date date
+    }
 }
