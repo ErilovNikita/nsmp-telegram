@@ -2,11 +2,11 @@ package ru.nerilov.telegram
 
 /**
  * # telegramConnector - Naumen Service Desk Package
- * Пакет корректного общения с внещним сервисом Telegram. *
+ * Пакет корректного общения с внешним сервисом Telegram. *
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.25 *
+ * @version 2.5.27 *
  */
 
 /* Зависимости */
@@ -75,7 +75,7 @@ class TelegramConnector {
     /** Базовые конструкторы URI, при составления ссылки нужно использовать метод .cloneBuilder() на объекте */
     static UriComponentsBuilder basicUriBuilder
 
-    /** Объект для сериализации и десериализации */
+    /** Объект для сериализации и дематериализации */
     ObjectMapper objectMapper = new ObjectMapper()
 
     /** Конструктор класса */
@@ -153,6 +153,32 @@ class TelegramConnector {
         )
     }
 
+    /**
+     * Ответ на запрос обратного вызова
+     *
+     * @return Все параметры бота
+     */
+    @VisibilityOptions(Visibility.PUBLIC)
+    @SuppressWarnings("unused")
+    void answerCallbackQuery(
+            String callbackQueryId,
+            String text = null,
+            Boolean showAlert = false,
+            String url = null,
+            Integer cacheTime = 0
+    ) {
+        Request.post(
+            "answerCallbackQuery",
+            [
+                    callback_query_id : callbackQueryId,
+                    text : text,
+                    show_alert : showAlert,
+                    url : url,
+                    cache_time : cacheTime
+            ].findAll { it.value != null }
+        )
+    }
+
     /** Класс взаимодействия c веб-хуками */
     class Webhook {
         /**
@@ -170,12 +196,12 @@ class TelegramConnector {
         }
 
         /**
-         * Устанавливает параметры вебхука
-         * @param url URL для получения обновлений через вебхук.
+         * Устанавливает параметры веб хука
+         * @param url URL для получения обновлений через веб хук.
          * @param allowedUpdates Список типов обновлений, которые будут приниматься (опционально).
          * @param certificate Файл сертификата для проверки подлинности (опционально).
          * @param maxConnections Максимальное количество одновременных HTTPS-соединений (опционально).
-         * @return Информация о текущем вебхуке.
+         * @return Информация о текущем веб хуке.
          */
         @VisibilityOptions(Visibility.PUBLIC)
         @SuppressWarnings("unused")
@@ -453,7 +479,7 @@ class TelegramConnector {
         /**
          * Отправка фотографии в сообщении в чат
          * @param chatId Идентификатор чата
-         * @param photoObject Обьект фотографии (ISDtObject)
+         * @param photoObject Объект фотографии (ISDtObject)
          * @param caption Подпись к фотографии
          * @param protectContent Флаг включающий  запрет на пересылку и сохранения (по умолчанию false)
          * @param disableNotification Флаг отключения уведомления о закреплении (по умолчанию false)
@@ -533,7 +559,7 @@ class TelegramConnector {
          * @param chatId Идентификатор чата
          * @param messageId Идентификатор сообщения
          * @param reactionCode Код реакции
-         * @param isBig Флаг включения реакции с больбшой анимацией (по умолчанию false)
+         * @param isBig Флаг включения реакции с большой анимацией (по умолчанию false)
          */
         @VisibilityOptions(Visibility.PUBLIC)
         @SuppressWarnings("unused")
@@ -594,7 +620,7 @@ class TelegramConnector {
                         objectMapper.writeValueAsString(response.result?.user),
                         TelegramDto.User
                 )
-            } catch (TelegramException e) {
+            } catch (TelegramException ignored) {
                 return null
             }
         }
@@ -740,7 +766,7 @@ class TelegramDto {
              * Боты получают только обновления о остановленных вручную опросах и опросах, которые отправляются ботом */
             POLL("poll"),
 
-            /** Пользователь изменил свой ответ в неанонимном опросе.
+            /** Пользователь изменил свой ответ в не анонимном опросе.
              * Боты получают новые голоса только в опросах, которые были отправлены самим ботом.*/
             POLL_ANSWER("poll_answer"),
 
@@ -929,7 +955,7 @@ class TelegramDto {
         @JsonProperty("reply_markup")
         InlineKeyboard.Markup replyMarkup
 
-        /** DTO для местрорасположения */
+        /** DTO для месторасположения */
         static class Location {
             @SuppressWarnings("unused")
             Float latitude

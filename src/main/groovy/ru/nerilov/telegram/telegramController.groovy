@@ -4,22 +4,25 @@ package ru.nerilov.telegram
 
 /**
  * # telegramController - Naumen Service Desk Package
- * Пакет для взаимодейсвтия с инстансом Telegram. *
+ * Пакет для взаимодействия с инстансом Telegram. *
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA
  * @since 03.07.2025
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import ru.naumen.core.server.script.api.injection.InjectApi
+import ru.nerilov.telegram.TelegramDto.Webhook.Update.CallbackQuery
+import ru.nerilov.telegram.TelegramDto.Message
+import ru.nerilov.telegram.TelegramDto.Webhook.Update
 
 /**
- * Статические перемеменные
+ * Статические переменные
  */
 class NsmpConstants {
     /** Логин служебного сотрудника в NSD */
     public static final String BOT_EMPLOYEE_LOGIN = "system"
-    /** Функционал модуля, который будет использоваться для установки вебхука */
+    /** Функционал модуля, который будет использоваться для установки WebHook'a */
     public static final String FUNC_MODULE = "telegramController.getWebhook"
     /** Сообщение для "знакомства" с ботом */
     public static final String PAIR_MESSAGE = "Привет, давай знакомиться. Я знаю что ты скучаешь"
@@ -41,6 +44,7 @@ class ObjectWrapper {
      * @param userObject Объект пользователя
      * @return Возвращает chatId пользователя, если он есть, иначе null
      */
+    @SuppressWarnings('unused')
     static Long getChatId(Object userObject) {
         if (!userObject) return null
         return userObject[(NsmpConstants.USER_ID_CODE)] as Long
@@ -51,6 +55,7 @@ class ObjectWrapper {
      * @param userObject Объект пользователя
      * @return Возвращает никнейм пользователя, если он есть, иначе null
      */
+    @SuppressWarnings('unused')
     static String getNickNameId(Object userObject) {
         if (!userObject) return null
         return userObject[(NsmpConstants.USER_NICKNAME_CODE)]?.replaceAll('@', '')
@@ -71,6 +76,7 @@ class ObjectWrapper {
      * Получает список всех известных пользователей
      * @return Возвращает список идентификаторов пользователей, которые имеют доступ к боту
      */
+    @SuppressWarnings(['GroovyAssignabilityCheck'])
     List<Long> getAllAccessUser() {
         utils.find('employee', [(NsmpConstants.USER_ID_CODE): op.isNotNull()])
                 .collect { it[(NsmpConstants.USER_ID_CODE)]?.toLong() ?: null }
@@ -84,7 +90,7 @@ class ObjectWrapper {
  * @param telegram Объект Telegram для взаимодействия с API
  */
 void pairUser(
-        TelegramDto.Message message,
+        Message message,
         TelegramConnector telegram = new TelegramConnector()
 ) {
     ObjectWrapper objectWrapper = new ObjectWrapper()
@@ -108,10 +114,10 @@ void pairUser(
 @SuppressWarnings('unused')
 String getWebhook(Map requestContent) {
     TelegramConnector telegram = new TelegramConnector()
-    TelegramDto.Webhook.Update update = telegram.objectMapper.readValue(
-            telegram.objectMapper.writeValueAsString(requestContent),
-            TelegramDto.Webhook.Update
-    )
+    Update update = telegram.objectMapper.readValue(telegram.objectMapper.writeValueAsString(requestContent), Update)
+
+    // Обработка callback'a
+    if (update?.callbackQuery) processCallback(update.callbackQuery)
 
     // Обработка входящего сообщения
     if (update?.message) processMessage(telegram, update.message)
@@ -120,12 +126,13 @@ String getWebhook(Map requestContent) {
 }
 
 /**
- * Метод для обрабатки сообщений
+ * Метод для обработки сообщений
  * @param messageData Данные о сообщении
  */
-void processMessage(TelegramConnector telegram, TelegramDto.Message message) {
+@SuppressWarnings("GrMethodMayBeStatic")
+void processMessage(TelegramConnector telegram, Message message) {
 
-    /** Текущий идетификатор чата */
+    /** Текущий идентификатор чата */
     Long chatId = message.chat.id
     /** Текст обрабатываемого сообщения (сразу в нижнем регистре) */
     String messageText = message.text?.toLowerCase() ?: null
@@ -184,4 +191,15 @@ void processMessage(TelegramConnector telegram, TelegramDto.Message message) {
         logger.info(message?.dump()?.toString())
     }
 
+}
+
+/**
+ * Процесс для обработки callback'ов
+ * @param callbackQuery Данные о callback'е
+ */
+@SuppressWarnings("GrMethodMayBeStatic")
+void processCallback(CallbackQuery callbackQuery) {
+    TelegramConnector telegram = new TelegramConnector()
+
+    telegram.answerCallbackQuery(callbackQuery.id)
 }

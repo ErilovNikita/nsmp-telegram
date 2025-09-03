@@ -4,7 +4,7 @@
  * @author Erilov.NA
  * @since 03.07.2025
  * @contributions Erilov.NA
- * @version 2.1.2
+ * @version 2.1.3
  */
 
 import ru.nerilov.telegram.TelegramConnector
@@ -17,10 +17,10 @@ api.auth.removeAccessKeys(NsmpConstants.BOT_EMPLOYEE_LOGIN)
 // Создание нового ключа для бота
 String accessKey = api.auth.getAccessKey(NsmpConstants.BOT_EMPLOYEE_LOGIN).setDeadlineHours(25).uuid
 
-//  Формирование URL для установки нового вебхука
+//  Формирование URL для установки нового веб хука
 String url = "${api.rest.getBaseUrl()}/services/rest/exec-post?params=requestContent&accessKey=${accessKey}&func=modules.${NsmpConstants.FUNC_MODULE}"
 
-// Установка вебхука с новым ключем
+// Установка веб хука с новым ключем
 new TelegramConnector().Webhook.set(url, [
         UpdateType.CALLBACK_QUERY.value,
         UpdateType.MESSAGE.value,
