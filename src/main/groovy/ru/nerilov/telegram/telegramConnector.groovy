@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.27 *
+ * @version 2.5.28 *
  */
 
 /* Зависимости */
@@ -75,7 +75,7 @@ class TelegramConnector {
     /** Базовые конструкторы URI, при составления ссылки нужно использовать метод .cloneBuilder() на объекте */
     static UriComponentsBuilder basicUriBuilder
 
-    /** Объект для сериализации и дематериализации */
+    /** Объект для сериализации и десериализации */
     ObjectMapper objectMapper = new ObjectMapper()
 
     /** Конструктор класса */
