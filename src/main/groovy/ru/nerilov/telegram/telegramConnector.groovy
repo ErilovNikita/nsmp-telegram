@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.28 *
+ * @version 2.5.42 *
  */
 
 /* Зависимости */
@@ -15,6 +15,11 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -23,9 +28,10 @@ import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
+
 import groovy.transform.VisibilityOptions
 import groovy.transform.options.Visibility
-import com.fasterxml.jackson.annotation.JsonProperty
+
 import ru.naumen.core.shared.dto.ISDtObject
 import ru.naumen.core.server.script.api.injection.InjectApi
 
@@ -110,7 +116,7 @@ class TelegramConnector {
      */
     @VisibilityOptions(Visibility.PUBLIC)
     @SuppressWarnings("unused")
-    private static String docs() { return "https://core.telegram.org" }
+    private static String docs() { return "https://core.telegram.org/bots/api#available-methods" }
 
     /** Класс взаимодействия c запросами */
     private class Request {
@@ -260,6 +266,25 @@ class TelegramConnector {
         }
 
         /**
+         * Отправка сообщения в чат
+         * @param chat Объект класса TelegramDto.Chat
+         * @param message Текст сообщения
+         * @param replyMarkup Клавиатура для ответа
+         * @param parseMode Режим форматирования текста
+         * @return Отправленное сообщение
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.Message send(
+                TelegramDto.Chat chat,
+                String message,
+                TelegramDto.Message.InlineKeyboard.Markup replyMarkup = null,
+                String parseMode = 'HTML'
+        ) {
+            send(chat.id, message, replyMarkup, parseMode)
+        }
+
+        /**
          * Удаление сообщения в чате
          * @param chatId Идентификатор чата
          * @param messageId Идентификатор сообщения
@@ -271,6 +296,20 @@ class TelegramConnector {
                 Long messageId
         ) {
             Request.post("deleteMessage", [ chat_id: chatId, message_id: messageId ])
+        }
+
+        /**
+         * Удаление сообщения в чате
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param message Объекта класса TelegramDto.Message
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void delete(
+                TelegramDto.Chat chat,
+                TelegramDto.Message message
+        ) {
+            delete(chat.id, message.messageId)
         }
 
         /**
@@ -397,6 +436,25 @@ class TelegramConnector {
         }
 
         /**
+         * Переслать сообщение в другой чат
+         * @param chat Объект класса TelegramDto.Chat куда переслать
+         * @param message Объект класса TelegramDto.Message
+         * @param protectContent Флаг включающий  запрет на пересылку и сохранения (по умолчанию false)
+         * @param disableNotification Флаг отключения уведомления о закреплении (по умолчанию false)
+         * @return Отправленное сообщение
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.Message forward(
+                TelegramDto.Chat chat,
+                TelegramDto.Message message,
+                Boolean protectContent = false,
+                Boolean disableNotification = false
+        ) {
+            forward(chat.id, message.messageId, message.chat.id, protectContent, disableNotification)
+        }
+
+        /**
          * Отправка локации в сообщении в чат
          * @param chatId Идентификатор чата
          * @param latitude Широта местоположения
@@ -431,6 +489,31 @@ class TelegramConnector {
                     objectMapper.writeValueAsString(response.result),
                     TelegramDto.Message
             )
+        }
+
+        /**
+         * Отправка локации в сообщении в чат
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param latitude Широта местоположения
+         * @param longitude Долгота местоположения
+         * @param horizontalAccuracy Радиус неопределенности для местоположения, измеренный в метрах; 0-1500
+         * @param protectContent Флаг включающий  запрет на пересылку и сохранения (по умолчанию false)
+         * @param disableNotification Флаг отключения уведомления о закреплении (по умолчанию false)
+         * @param replyMarkup Клавиатура для ответа
+         * @return Отправленное сообщение
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.Message sendLocation(
+                TelegramDto.Chat chat,
+                Float latitude,
+                Float longitude,
+                Float horizontalAccuracy = 100,
+                Boolean protectContent = false,
+                Boolean disableNotification = false,
+                TelegramDto.Message.InlineKeyboard.Markup replyMarkup = null
+        ) {
+            sendLocation(chat.id, latitude, longitude, horizontalAccuracy, protectContent, disableNotification, replyMarkup)
         }
 
         /**
@@ -478,6 +561,29 @@ class TelegramConnector {
 
         /**
          * Отправка фотографии в сообщении в чат
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param photo Файл фотографии
+         * @param caption Подпись к фотографии
+         * @param protectContent Флаг включающий  запрет на пересылку и сохранения (по умолчанию false)
+         * @param disableNotification Флаг отключения уведомления о закреплении (по умолчанию false)
+         * @param replyMarkup Клавиатура для ответа
+         * @return Отправленное сообщение
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.Message sendPhoto(
+                TelegramDto.Chat chat,
+                File photo,
+                String caption,
+                Boolean protectContent = false,
+                Boolean disableNotification = false,
+                TelegramDto.Message.InlineKeyboard.Markup replyMarkup = null
+        ) {
+            sendPhoto(chat.id, photo, caption, protectContent, disableNotification, replyMarkup)
+        }
+
+        /**
+         * Отправка фотографии в сообщении в чат
          * @param chatId Идентификатор чата
          * @param photoObject Объект фотографии (ISDtObject)
          * @param caption Подпись к фотографии
@@ -501,6 +607,29 @@ class TelegramConnector {
                 fos.write(utils.readFileContent(photoObject) as byte[])
             }
             sendPhoto(chatId, file, caption, protectContent, disableNotification, replyMarkup)
+        }
+
+        /**
+         * Отправка фотографии в сообщении в чат
+         * @param chat Объект класса TelegramDto.Chat
+         * @param photoObject Объект фотографии (ISDtObject)
+         * @param caption Подпись к фотографии
+         * @param protectContent Флаг включающий  запрет на пересылку и сохранения (по умолчанию false)
+         * @param disableNotification Флаг отключения уведомления о закреплении (по умолчанию false)
+         * @param replyMarkup Клавиатура для ответа
+         * @return Отправленное сообщение
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.Message sendPhoto(
+                TelegramDto.Chat chat,
+                ISDtObject photoObject,
+                String caption,
+                Boolean protectContent = false,
+                Boolean disableNotification = false,
+                TelegramDto.Message.InlineKeyboard.Markup replyMarkup = null
+        ) {
+            sendPhoto(chat.id, photoObject, caption, protectContent, disableNotification, replyMarkup)
         }
 
         /**
@@ -563,7 +692,7 @@ class TelegramConnector {
          */
         @VisibilityOptions(Visibility.PUBLIC)
         @SuppressWarnings("unused")
-        def setReaction(Long chatId, Long messageId, String reactionCode, isBig = false) {
+        void setReaction(Long chatId, Long messageId, String reactionCode, isBig = false) {
             List<String> allowed = TelegramDto.Message.ReactionType.values().collect{ it?.toString() }
             if (reactionCode && reactionCode.toUpperCase() !in allowed) throw new TelegramException("Недопустимое значение \"reaction\": $reactionCode. Допустимые значения: ${allowed.join(', ')}")
 
@@ -576,6 +705,18 @@ class TelegramConnector {
                                    ]],
                     is_big: isBig
             ])
+        }
+
+        /**
+         * Поставить реакцию на сообщение в чате
+         * @param message Объект класса TelegramDto.Message
+         * @param reactionCode Код реакции
+         * @param isBig Флаг включения реакции с большой анимацией (по умолчанию false)
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void setReaction(TelegramDto.Message message, String reactionCode, isBig = false) {
+            setReaction(message.chat.id, message.messageId, reactionCode, isBig)
         }
     }
 
@@ -591,18 +732,39 @@ class TelegramConnector {
         }
 
         /**
+         * Выйти из чата
+         * @param chat Объекта класса TelegramDto.Chat
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void leave(TelegramDto.Chat chat) {
+            leave(chat.id)
+        }
+
+        /**
          * Получить всех администраторов
          * @param chatId Идентификатор чата
          * @return Список пользователей
          */
         @VisibilityOptions(Visibility.PUBLIC)
         @SuppressWarnings("unused")
-        List<TelegramDto.User> getAdministrators(Long chatId) {
+        List<TelegramDto.Chat.ChatMember> getAdministrators(Long chatId) {
             TelegramDto.BaseResponse response = Request.post("getChatAdministrators", [chat_id: chatId])
             objectMapper.readValue(
                     objectMapper.writeValueAsString(response.result),
-                    List<TelegramDto.User>
+                    TelegramDto.Chat.ChatMember[]
             )
+        }
+
+        /**
+         * Получить всех администраторов
+         * @param chat Объекта класса TelegramDto.Chat
+         * @return Список пользователей
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        List<TelegramDto.Chat.ChatMember> getAdministrators(TelegramDto.Chat chat) {
+            getAdministrators(chat.id)
         }
 
         /**
@@ -626,6 +788,18 @@ class TelegramConnector {
         }
 
         /**
+         * Получить участника чата
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param userId Идентификатор участника
+         * @return Пользователь или null - Если такого не существует
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        TelegramDto.User getMember(TelegramDto.Chat chat, Long userId) {
+            getMember(chat.id, userId)
+        }
+
+        /**
          * Получить всех участников
          * @param chatId Идентификатор текущего чата
          * @param allAccessUserIds Список идентификаторов всех известных пользователей
@@ -634,7 +808,19 @@ class TelegramConnector {
         @VisibilityOptions(Visibility.PUBLIC)
         @SuppressWarnings("unused")
         List<TelegramDto.User> getMembers(Long chatId, List<Long> allAccessUserIds = []) {
-            allAccessUserIds.collect { getMember(chatId, it)}.findAll()
+            allAccessUserIds.collect { getMember(chatId, it) }.findAll()
+        }
+
+        /**
+         * Получить всех участников
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param allAccessUserIds Список идентификаторов всех известных пользователей
+         * @return Список пользователей
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        List<TelegramDto.User> getMembers(TelegramDto.Chat chat, List<Long> allAccessUserIds = []) {
+            getMembers(chat.id, allAccessUserIds)
         }
 
         /**
@@ -646,6 +832,17 @@ class TelegramConnector {
         @SuppressWarnings("unused")
         void setTitle(Long chatId, String title) {
             Request.post("setChatTitle", [chat_id: chatId, title: title])
+        }
+
+        /**
+         * Установить новое название чата
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param title Название чата
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void setTitle(TelegramDto.Chat chat, String title) {
+            setTitle(chat.id, title)
         }
 
         /**
@@ -672,6 +869,17 @@ class TelegramConnector {
 
         /**
          * Установить аватарку чата
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param photo Картинка
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void setPhoto(TelegramDto.Chat chat, File photo) {
+            setPhoto(chat.id, photo)
+        }
+
+        /**
+         * Установить аватарку чата
          * @param chatId Идентификатор чата
          * @param photoObject Объект картинки
          */
@@ -683,6 +891,78 @@ class TelegramConnector {
                 fos.write(utils.readFileContent(photoObject) as byte[])
             }
             setPhoto(chatId, photo)
+        }
+
+        /**
+         * Установить аватарку чата
+         * @param chat Объекта класса TelegramDto.Chat
+         * @param photoObject Объект картинки
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void setPhoto(TelegramDto.Chat chat, ISDtObject photoObject) {
+            setPhoto(chat.id, photoObject)
+        }
+
+        /**
+         * Забанить участника в чате
+         * @param chatId Идентификатор чата
+         * @param userId Идентификатор пользователя
+         * @param untilDate Дата до которой действует бан (null - навсегда)
+         * @param revokeMessages Флаг удаления всех сообщений от пользователя (по умолчанию false)
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void banChatMember(Long chatId, Long userId, Date untilDate = null, Boolean revokeMessages = false) {
+            TelegramDto.BaseResponse response = Request.post("banChatMember", [
+                    chat_id        : chatId,
+                    user_id        : userId,
+                    until_date     : untilDate ? (untilDate.time / 1000).toInteger() : null,
+                    revoke_messages: revokeMessages
+            ].findAll { it.value != null })
+            if (!response?.ok) throw new TelegramException("Не удалось забанить пользователя $userId в чате $chatId")
+        }
+
+        /**
+         * Забанить участника в чате
+         * @param chat Объект класса TelegramDto.Chat
+         * @param user Объект класса TelegramDto.User
+         * @param untilDate Дата до которой действует бан (null - навсегда)
+         * @param revokeMessages Флаг удаления всех сообщений от пользователя (по умолчанию false)
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void banChatMember(TelegramDto.Chat chat, TelegramDto.User user, Date untilDate = null, Boolean revokeMessages = false) {
+            banChatMember(chat.id, user.id, untilDate, revokeMessages)
+        }
+
+        /**
+         * Разбанить участника в чате
+         * @param chatId Идентификатор чата
+         * @param userId Идентификатор пользователя
+         * @param onlyIfBanned Флаг разбанить только если пользователь в бане (по умолчанию false)
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void unbanChatMember(Long chatId, Long userId, Boolean onlyIfBanned = false) {
+            TelegramDto.BaseResponse response = Request.post("unbanChatMember", [
+                    chat_id       : chatId,
+                    user_id       : userId,
+                    only_if_banned: onlyIfBanned
+            ].findAll { it.value != null })
+            if (!response?.ok) throw new TelegramException("Не удалось разбанить пользователя $userId в чате $chatId")
+        }
+
+        /**
+         * Разбанить участника в чате
+         * @param chat Объект класса TelegramDto.Chat
+         * @param user Объект класса TelegramDto.User
+         * @param onlyIfBanned Флаг разбанить только если пользователь в бане (по умолчанию false)
+         */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void unbanChatMember(TelegramDto.Chat chat, TelegramDto.User user, Boolean onlyIfBanned = false) {
+            unbanChatMember(chat.id, user.id, onlyIfBanned)
         }
     }
 }
@@ -899,6 +1179,119 @@ class TelegramDto {
             @JsonProperty("premium_subscription")
             Boolean premiumSubscription
         }
+
+        /** DTO для типов участника чата */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonTypeInfo(
+                use = JsonTypeInfo.Id.NAME,
+                include = JsonTypeInfo.As.EXISTING_PROPERTY,
+                property = "status",
+                visible = true
+        )
+        @JsonSubTypes([
+                @JsonSubTypes.Type(value = ChatMemberLeft.class, name = "left"),
+                @JsonSubTypes.Type(value = ChatMemberOwner.class, name = "creator"),
+                @JsonSubTypes.Type(value = ChatMemberAdministrator.class, name = "administrator"),
+                @JsonSubTypes.Type(value = ChatMemberMember.class, name = "member"),
+                @JsonSubTypes.Type(value = ChatMemberBanned.class, name = "kicked"),
+                @JsonSubTypes.Type(value = ChatMemberRestricted.class, name = "restricted")
+        ])
+        static abstract class ChatMember {
+            @SuppressWarnings('unused')
+            String status
+            @SuppressWarnings('unused')
+            User user
+
+            /** DTO для нового участника чата */
+            static class ChatMemberLeft extends ChatMember{}
+
+            /** DTO для владельца чата */
+            static class ChatMemberOwner extends ChatMember {
+                @JsonProperty("is_anonymous")
+                Boolean isAnonymous
+                @JsonProperty("custom_title")
+                String customTitle
+            }
+
+            /** DTO для участника чата */
+            static class ChatMemberMember extends ChatMember {
+                @JsonProperty("until_date")
+                Integer untilDate
+            }
+
+            /** DTO для забаненного участника чата */
+            static class ChatMemberBanned extends ChatMemberMember {}
+
+            /** DTO для участника который находится под определенными ограничениями чата (Только для супер чатов) */
+            static class ChatMemberRestricted extends ChatMemberMember {
+                @JsonProperty("is_member")
+                Boolean isMember
+                @JsonProperty("can_send_messages")
+                Boolean canSendMessages
+                @JsonProperty("can_send_audios")
+                Boolean canSendAudios
+                @JsonProperty("can_send_documents")
+                Boolean canSendDocuments
+                @JsonProperty("can_send_photos")
+                Boolean canSendPhotos
+                @JsonProperty("can_send_videos")
+                Boolean canSendVideos
+                @JsonProperty("can_send_video_notes")
+                Boolean canSendVideoNotes
+                @JsonProperty("can_send_voice_notes")
+                Boolean canSendVoiceNotes
+                @JsonProperty("can_send_polls")
+                Boolean canSendPolls
+                @JsonProperty("can_send_other_messages")
+                Boolean canSendOtherMessages
+                @JsonProperty("can_add_web_page_previews")
+                Boolean canAddWebPagePreviews
+                @JsonProperty("can_change_info")
+                Boolean canChangeInfo
+                @JsonProperty("can_invite_users")
+                Boolean canInviteUsers
+                @JsonProperty("can_pin_messages")
+                Boolean canPinMessages
+                @JsonProperty("can_manage_topics")
+                Boolean canManageTopics
+            }
+
+            /** DTO для администратора чата */
+            static class ChatMemberAdministrator extends ChatMemberOwner {
+                @JsonProperty("can_be_edited")
+                Boolean canBeEdited
+                @JsonProperty("can_manage_chat")
+                Boolean canManageChat
+                @JsonProperty("can_delete_messages")
+                Boolean canDeleteMessages
+                @JsonProperty("can_manage_video_chats")
+                Boolean canManageVideoChats
+                @JsonProperty("can_restrict_members")
+                Boolean canRestrictMembers
+                @JsonProperty("can_promote_members")
+                Boolean canPromoteMembers
+                @JsonProperty("can_change_info")
+                Boolean canChangeInfo
+                @JsonProperty("can_invite_users")
+                Boolean canInviteUsers
+                @JsonProperty("can_post_stories")
+                Boolean canPostStories
+                @JsonProperty("can_edit_stories")
+                Boolean canEditStories
+                @JsonProperty("can_delete_stories")
+                Boolean canDeleteStories
+                @JsonProperty("can_post_messages")
+                Boolean canPostMessages
+                @JsonProperty("can_edit_messages")
+                Boolean canEditMessages
+                @JsonProperty("can_pin_messages")
+                Boolean canPinMessages
+                @JsonProperty("can_manage_topics")
+                Boolean canManageTopics
+                @JsonProperty("can_manage_direct_messages")
+                Boolean canManageDirectMessages
+            }
+        }
     }
 
     /** DTO для сообщения */
@@ -917,7 +1310,7 @@ class TelegramDto {
         @JsonProperty("new_chat_title")
         String newChatTitle
         @JsonProperty("new_chat_member")
-        List<Photo> newChatMember
+        User newChatMember
         @JsonProperty("new_chat_photo")
         newChatPhoto
         @JsonDeserialize(using = UnixTimeToDateDeserializer)
