@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.42 *
+ * @version 2.5.43 *
  */
 
 /* Зависимости */
@@ -720,6 +720,7 @@ class TelegramConnector {
         }
     }
 
+    /** Класс взаимодействия c чатами */
     class Chat {
         /**
          * Выйти из чата

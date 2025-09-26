@@ -8,7 +8,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA
  * @since 03.07.2025
- * @version 1.1.0
+ * @version 1.1.2
  */
 
 import ru.naumen.core.server.script.api.injection.InjectApi
@@ -132,8 +132,8 @@ String getWebhook(Map requestContent) {
 @SuppressWarnings("GrMethodMayBeStatic")
 void processMessage(TelegramConnector telegram, Message message) {
 
-    /** Текущий идентификатор чата */
-    Long chatId = message.chat.id
+    /** Текущий чат */
+    TelegramDto.Chat chat = message.chat
     /** Текст обрабатываемого сообщения (сразу в нижнем регистре) */
     String messageText = message.text?.toLowerCase() ?: null
     /** Информация о текущем боте */
@@ -143,16 +143,16 @@ void processMessage(TelegramConnector telegram, Message message) {
     // Бота позвали в новую беседу или создали чат с ботом
     if (message?.newChatMembers?.any {it?.username == me.username} || message.groupChatCreated){
         String responseText = """Оп-па, а вот и новый чатик.
-Если вдруг кому-то нужно, вот текущий ChatID: <pre>${chatId as String}</pre>"""
+Если вдруг кому-то нужно, вот текущий ChatID: <pre>${chat.id as String}</pre>"""
 
-        telegram.Message.send(chatId, responseText)
+        telegram.Message.send(chat, responseText)
     }
 
     // Обработка опроса
     else if (message.poll) {
         TelegramDto.Poll poll = message.poll
-        telegram.Message.send(chatId, "Новый опрос это здорово, давайте тыкайте реще! ${poll.question}")
-        telegram.Message.send(chatId, "ХЗ кто-как, лично я - ${poll.options[0].text}!")
+        telegram.Message.send(chat, "Новый опрос это здорово, давайте тыкайте реще! ${poll.question}")
+        telegram.Message.send(chat, "ХЗ кто-как, лично я - ${poll.options[0].text}!")
     }
 
     // Обработка текста сообщения
@@ -163,7 +163,7 @@ void processMessage(TelegramConnector telegram, Message message) {
 
             // Обработка обращения к боту с вопросом выбрать случайного пользователя
             if (messageText?.contains("кого следующим") || messageText?.contains("кто следующий")) {
-                List<TelegramDto.User> allMembers = telegram.Chat.getMembers(chatId, objectWrapper.getAllAccessUser())
+                List<TelegramDto.User> allMembers = telegram.Chat.getMembers(chat, objectWrapper.getAllAccessUser())
                 List<String> usernames = allMembers.collect { '@' + it.username }
                 usernames += 'хз'
 
@@ -172,7 +172,7 @@ void processMessage(TelegramConnector telegram, Message message) {
 
             // Не обработанное обращение
             else {
-                telegram.Message.send(chatId, 'Что звал то? Ничего не могу понять')
+                telegram.Message.send(chat, 'Что звал то? Ничего не могу понять')
             }
         }
 
@@ -180,7 +180,7 @@ void processMessage(TelegramConnector telegram, Message message) {
         else if (messageText?.contains("#кричу")) telegram.Message.reply(message, 'Не кричи')
 
         // Обработка точного совпадения текста сообщения
-        else if (messageText == 'привет') telegram.Message.send(chatId, 'Ооо, здарова, брат')
+        else if (messageText == 'привет') telegram.Message.send(chat, 'Ооо, здарова, брат')
 
         // Обработка сообщения "Знакомство"
         else if (messageText == NsmpConstants.PAIR_MESSAGE.toLowerCase()) pairUser(message, telegram)
