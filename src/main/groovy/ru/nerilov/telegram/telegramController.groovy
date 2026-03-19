@@ -77,7 +77,7 @@ class ObjectWrapper {
      * @return Возвращает список идентификаторов пользователей, которые имеют доступ к боту
      */
     @SuppressWarnings(['GroovyAssignabilityCheck'])
-    List<Long> getAllAccessUser() {
+    List<Long> getAllAccessUserAsLong() {
         utils.find('employee', [(NsmpConstants.USER_ID_CODE): op.isNotNull()])
                 .collect { it[(NsmpConstants.USER_ID_CODE)]?.toLong() ?: null }
                 .findAll { it != null }
@@ -163,7 +163,7 @@ void processMessage(TelegramConnector telegram, Message message) {
 
             // Обработка обращения к боту с вопросом выбрать случайного пользователя
             if (messageText?.contains("кого следующим") || messageText?.contains("кто следующий")) {
-                List<TelegramDto.User> allMembers = telegram.Chat.getMembers(chat, objectWrapper.getAllAccessUser())
+                List<TelegramDto.User> allMembers = telegram.Chat.getMembers(chat, objectWrapper.getAllAccessUserAsLong())
                 List<String> usernames = allMembers.collect { '@' + it.username }
                 usernames += 'хз'
 

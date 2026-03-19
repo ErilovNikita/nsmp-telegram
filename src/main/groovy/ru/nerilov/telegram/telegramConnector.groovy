@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.43 *
+ * @version 2.5.44 *
  */
 
 /* Зависимости */
@@ -27,10 +27,13 @@ import org.springframework.http.MediaType
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestTemplate
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.util.UriComponentsBuilder
 
 import groovy.transform.VisibilityOptions
 import groovy.transform.options.Visibility
+import java.net.InetSocketAddress
+import java.net.Proxy
 
 import ru.naumen.core.shared.dto.ISDtObject
 import ru.naumen.core.server.script.api.injection.InjectApi
@@ -47,6 +50,8 @@ class ApiConstants {
     protected static final String API_BASE_PATH = "bot"
     /** Ключ доступа */
     protected static final String ACCESS_KEY = "ACCESS_TOKEN"
+    /** Прокси #10.0.0.1:8808 */
+    protected static final String PROXY = null
 }
 
 /**
@@ -91,7 +96,22 @@ class TelegramConnector {
                 .host(ApiConstants.API_HOST)
                 .pathSegment(ApiConstants.API_BASE_PATH + ApiConstants.ACCESS_KEY)
 
-        restClient = new RestTemplate()
+        restClient = {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory()
+
+            if (ApiConstants.PROXY) {
+                try {
+                    String host = ApiConstants.PROXY.split(':')?.first()
+                    Integer port = ApiConstants.PROXY.split(':')?.last()?.trim()?.toInteger()
+
+                    if (host && port) requestFactory.setProxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port)))
+                    else throw new TelegramException("ApiConstants.PROXY невалидный: ${ApiConstants.PROXY}")
+                } catch (Exception e) {
+                    throw new TelegramException("Не удалось настроить прокси: ${e.message}")
+                }
+            }
+            new RestTemplate(requestFactory)
+        }()
     }
 
     /** Класс для работы с запросами */
@@ -151,7 +171,7 @@ class TelegramConnector {
      */
     @VisibilityOptions(Visibility.PUBLIC)
     @SuppressWarnings("unused")
-    TelegramDto.Bot getMe() {
+    def getMe() {
         TelegramDto.BaseResponse response = Request.post("getMe")
         objectMapper.readValue(
                 objectMapper.writeValueAsString(response.result),
@@ -982,6 +1002,7 @@ class TelegramDto {
     }
 
     /** DTO для бота */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class Bot {
         @JsonProperty("id")
         Long id
@@ -1004,6 +1025,7 @@ class TelegramDto {
     }
 
     /** DTO для Webhook */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class Webhook {
         @SuppressWarnings("unused")
         String url
@@ -1061,6 +1083,7 @@ class TelegramDto {
         }
 
         /** DTO для обновления */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class Update {
             @JsonProperty("update_id")
             Integer updateId
@@ -1080,6 +1103,7 @@ class TelegramDto {
             @JsonProperty("callback_query")
             CallbackQuery callbackQuery
 
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class CallbackQuery {
                 @SuppressWarnings("unused")
                 String id
@@ -1100,6 +1124,7 @@ class TelegramDto {
                 String gameShortName
             }
 
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMember {
                 @SuppressWarnings("unused")
                 String status
@@ -1111,6 +1136,7 @@ class TelegramDto {
                 String customTitle
             }
 
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMemberUpdated {
                 @SuppressWarnings("unused")
                 Chat chat
@@ -1131,6 +1157,7 @@ class TelegramDto {
     }
 
     /** DTO для пользователя */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class User {
         @SuppressWarnings("unused")
         Long id
@@ -1150,6 +1177,7 @@ class TelegramDto {
     }
 
     /** DTO для чата */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class Chat {
         Long id
         @SuppressWarnings("unused")
@@ -1170,6 +1198,7 @@ class TelegramDto {
         AcceptedGiftTypes acceptedGiftTypes
 
         /** DTO для типов подарков */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class AcceptedGiftTypes{
             @JsonProperty("unlimited_gifts")
             Boolean unlimitedGifts
@@ -1182,7 +1211,6 @@ class TelegramDto {
         }
 
         /** DTO для типов участника чата */
-        @JsonIgnoreProperties(ignoreUnknown = true)
         @JsonTypeInfo(
                 use = JsonTypeInfo.Id.NAME,
                 include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -1197,6 +1225,7 @@ class TelegramDto {
                 @JsonSubTypes.Type(value = ChatMemberBanned.class, name = "kicked"),
                 @JsonSubTypes.Type(value = ChatMemberRestricted.class, name = "restricted")
         ])
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static abstract class ChatMember {
             @SuppressWarnings('unused')
             String status
@@ -1207,6 +1236,7 @@ class TelegramDto {
             static class ChatMemberLeft extends ChatMember{}
 
             /** DTO для владельца чата */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMemberOwner extends ChatMember {
                 @JsonProperty("is_anonymous")
                 Boolean isAnonymous
@@ -1215,6 +1245,7 @@ class TelegramDto {
             }
 
             /** DTO для участника чата */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMemberMember extends ChatMember {
                 @JsonProperty("until_date")
                 Integer untilDate
@@ -1224,6 +1255,7 @@ class TelegramDto {
             static class ChatMemberBanned extends ChatMemberMember {}
 
             /** DTO для участника который находится под определенными ограничениями чата (Только для супер чатов) */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMemberRestricted extends ChatMemberMember {
                 @JsonProperty("is_member")
                 Boolean isMember
@@ -1258,6 +1290,7 @@ class TelegramDto {
             }
 
             /** DTO для администратора чата */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class ChatMemberAdministrator extends ChatMemberOwner {
                 @JsonProperty("can_be_edited")
                 Boolean canBeEdited
@@ -1296,6 +1329,7 @@ class TelegramDto {
     }
 
     /** DTO для сообщения */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class Message {
         @JsonProperty("message_id")
         Long messageId
@@ -1350,6 +1384,7 @@ class TelegramDto {
         InlineKeyboard.Markup replyMarkup
 
         /** DTO для месторасположения */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class Location {
             @SuppressWarnings("unused")
             Float latitude
@@ -1360,6 +1395,7 @@ class TelegramDto {
         }
 
         /** DTO для фотографии */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class Photo {
             @JsonProperty("file_id")
             String fileId
@@ -1374,6 +1410,7 @@ class TelegramDto {
         }
 
         /** DTO для сущности сообщения */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class MessageEntity {
             @SuppressWarnings("unused")
             String type
@@ -1475,6 +1512,7 @@ class TelegramDto {
         static class InlineKeyboard {
 
             /** Кнопка в Inline-клавиатуре */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class Button {
                 @SuppressWarnings("unused")
                 String text
@@ -1486,6 +1524,7 @@ class TelegramDto {
             }
 
             /** Разметка Inline-клавиатуры */
+            @JsonIgnoreProperties(ignoreUnknown = true)
             static class Markup {
                 @JsonProperty("inline_keyboard")
                 List<List<Button>> inlineKeyboard
@@ -1494,6 +1533,7 @@ class TelegramDto {
     }
 
     /** DTO для опроса */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class Poll {
         @SuppressWarnings("unused")
         Long id
@@ -1524,6 +1564,7 @@ class TelegramDto {
         Integer closeDate
 
         /** DTO для ответа на опрос */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class Answer {
             @JsonProperty("poll_id")
             String pollId
@@ -1536,6 +1577,7 @@ class TelegramDto {
         }
 
         /** DTO для опции в опросе */
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class Option {
             String text
             @JsonProperty("text_entities")
@@ -1547,6 +1589,7 @@ class TelegramDto {
 
     /** DTO для логирования сообщения */
     @SuppressWarnings("unused")
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class MessageLog {
         @JsonProperty("message_id")
         @SuppressWarnings("unused")
