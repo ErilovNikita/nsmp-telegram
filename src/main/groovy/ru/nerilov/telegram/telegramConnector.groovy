@@ -171,7 +171,7 @@ class TelegramConnector {
      */
     @VisibilityOptions(Visibility.PUBLIC)
     @SuppressWarnings("unused")
-    def getMe() {
+    TelegramDto.Bot getMe() {
         TelegramDto.BaseResponse response = Request.post("getMe")
         objectMapper.readValue(
                 objectMapper.writeValueAsString(response.result),
