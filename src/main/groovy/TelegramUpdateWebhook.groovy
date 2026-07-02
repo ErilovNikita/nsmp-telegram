@@ -4,12 +4,17 @@
  * @author Erilov.NA
  * @since 03.07.2025
  * @contributions Erilov.NA
- * @version 2.1.3
+ * @version 2.2.0
  */
 
 import ru.nerilov.telegram.TelegramConnector
 import ru.nerilov.telegram.NsmpConstants
 import ru.nerilov.telegram.TelegramDto.Webhook.UpdateType
+
+// Отключаем планировщик по запросам Long Pooling
+String longPollingSchedulerCode = "TelegramUpdateLongPolling"
+Object longPollingSchedulerStatus = api.scheduler.getStatus('ExecuteScriptTask$' + longPollingSchedulerCode) as Object
+longPollingSchedulerStatus?.trigger?.collect{ it.code }?.each{ api.scheduler.disableTrigger(it) }
 
 // Инвалидация всех ключей бота
 api.auth.removeAccessKeys(NsmpConstants.BOT_EMPLOYEE_LOGIN)
