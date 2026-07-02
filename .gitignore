@@ -14,6 +14,8 @@ out/
 !.gitignore
 !LICENSE
 !README.md
+!docs/
+!docs/**
 
 !src/
 !src/main/

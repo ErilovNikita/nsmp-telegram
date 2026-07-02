@@ -1,23 +1,44 @@
-# nsmp-telegram
-Пакет для работы с Telegram из Naumen Service Desk.
+# NSMP Telegram
+> Пакет для полноценной интеграции Telegram в Naumen Service Desk.
+
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+![nsmp support](https://img.shields.io/badge/NSMP-%3E%3D4.17.5-blue)
+
+<p align="center">
+  <img src="docs/logo.png" alt="Logo" width="256" height="256">
+</p>
 
 ## Состав
 ### [telegramConnector](src/main/groovy/ru/nerilov/telegram/telegramConnector.groovy)
-Основной модуль который служит для общения NSD с серверами Telegram. Может успешно существовать в одиночку.
+Основной модуль который служит для общения NSMP с серверами Telegram. Может успешно существовать в одиночку.
 
 Для корректного запуска, перед созданием модуля в системе, необходимо заменить значение `ACCESS_KEY` в классе `ApiConstants`
 
 ### [telegramController](src/main/groovy/ru/nerilov/telegram/telegramController.groovy)
 Модуль контроллер для работы с WebHook'ами Telegram'a.
 
-Необходим в том случае, если есть необходимость реагировать на какие-либо события пользователей в Telegram, и обрабатывать их силами NSD.
+Необходим в том случае, если есть необходимость обрабатывать внешние запросы от серверов Telegram.
 
 ### [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy)
-Скрипт для обновления ссылки WebHook'a, с встроенным ключем NSD.
+Скрипт задачи для обновления WebHook'a, с встроенным ключем NSD.
 
 Необходим если используете [telegramController](src/main/groovy/ru/nerilov/telegram/telegramController.groovy).
 
 Желательно использовать в качестве скрипта планировщика, для ежедневного обновления ключа, во избежании его компрометирования.
+
+При запуске отключает планировщик [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy), чтобы получение событий через WebHook и Long Polling не выполнялось одновременно.
+
+### [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy)
+Скрипт для получения и обработки обновлений Telegram через Long Polling.
+
+Использует общий обработчик [telegramUpdateProcessor](src/main/groovy/ru/nerilov/telegram/telegramUpdateProcessor.groovy), поэтому логика обработки событий одинаковая для WebHook и Long Polling.
+
+При запуске отключает планировщик [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy) и удаляет установленный WebHook в Telegram. Для защиты от параллельных запусков хранит timestamp-lock в `api.keyValue` по ключу `telegram/longPollingStartedAt`. Lock считается устаревшим через 15 минут. Offset последнего обработанного update хранится в `telegram/offset`.
+
+### [telegramUpdateProcessor](src/main/groovy/ru/nerilov/telegram/telegramUpdateProcessor.groovy)
+Общий обработчик обновлений Telegram.
+
+Используется и контроллером WebHook'ов, и скриптом Long Polling.
 
 ## Возможности
 - Отправка сообщения в чат
@@ -32,13 +53,35 @@
 - Работа с WebHook'ами Telegram'a
 - Работа с событиями пользователей в Telegram (Требуется [telegramController](src/main/groovy/ru/nerilov/telegram/telegramController.groovy))
 - Автоматическое обновление ключа WebHook'а (Требуется [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy))
+- Получение событий пользователей через Long Polling (Требуется [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy))
 
 
 ## Использование
+###  Режимы получения событий
+Интеграция поддерживает два режима получения входящих событий Telegram:
+
+- WebHook: Telegram сам вызывает REST-функцию NSD, которую обслуживает [telegramController](src/main/groovy/ru/nerilov/telegram/telegramController.groovy).
+- Long Polling: NSD по расписанию вызывает [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy), получает обновления через `getUpdates` и передает их в общий обработчик.
+
+Режимы рассчитаны на работу по отдельности. При включении WebHook-режима скрипт [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy) отключает планировщик Long Polling. При включении Long Polling-режима скрипт [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy) отключает планировщик WebHook-обновления и удаляет WebHook в Telegram.
+
+Для WebHook-режима:
+- Создайте модуль [telegramController](src/main/groovy/ru/nerilov/telegram/telegramController.groovy);
+- Настройте [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy) как ежедневную задачу планировщика для обновления access key;
+- Убедитесь, что планировщик [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy) выключен.
+
+Для Long Polling-режима:
+- Создайте планировщик для [TelegramUpdateLongPolling](/src/main/groovy/TelegramUpdateLongPolling.groovy);
+- Убедитесь, что планировщик [TelegramUpdateWebhook](/src/main/groovy/TelegramUpdateWebhook.groovy) выключен;
+- При первом запуске WebHook будет удален автоматически;
+- `offset` обновлений хранится в `api.keyValue` как `telegram/offset`;
+- `timestamp` текущего запуска хранится в `api.keyValue` как `telegram/longPollingStartedAt` и защищает от повторного запуска в течение 15 минут.
 
 ### Создание экземпляра класса для взаимодействия с API Telegram
 ```groovy
-Telegram telegram = new Telegram()
+import ru.nerilov.telegram.TelegramConnector
+
+TelegramConnector telegram = new TelegramConnector()
 ```
 
 ###  Работа с WebHook'ами
@@ -48,6 +91,9 @@ telegram.Webhook.get()
 
 //Устанавливает новые параметры
 telegram.Webhook.set("https://ya.ru")
+
+// Удаляет WebHook, если используется Long Polling
+telegram.Webhook.delete()
 ```
 
 ###  Работа с чатом
@@ -134,4 +180,3 @@ telegram.Message.sendPhoto(chat as TelegramDto.Chat, utils.get(fileUUID), captio
 telegram.Message.sendPhoto(chatId, fileObject, caption)
 telegram.Message.sendPhoto(chat as TelegramDto.Chat, fileObject, caption)
 ```
-
