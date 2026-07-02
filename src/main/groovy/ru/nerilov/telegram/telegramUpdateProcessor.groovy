@@ -8,7 +8,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA
  * @since 02.06.2026
- * @version 1.0.0
+ * @version 1.2.0
  */
 
 import ru.naumen.core.server.script.api.injection.InjectApi
@@ -83,16 +83,17 @@ class ObjectWrapper {
 
 @InjectApi
 class TelegramUpdateProcessor {
+    TelegramConnector telegramConnector
+
+    TelegramUpdateProcessor(TelegramConnector telegram = new TelegramConnector()) {
+        this.telegramConnector = telegram
+    }
 
     /**
      * Знакомство пользователей
      * @param message Сообщение
-     * @param telegram Объект Telegram для взаимодействия с API
      */
-    void pairUser(
-            TelegramDto.Message message,
-            TelegramConnector telegram = new TelegramConnector()
-    ) {
+    void pairUser(TelegramDto.Message message) {
         ObjectWrapper objectWrapper = new ObjectWrapper()
         // Проверка на наличие пользователя в базе
         Object employeeObject = objectWrapper.getEmployeeByNickname(message.from.username)
@@ -100,9 +101,9 @@ class TelegramUpdateProcessor {
         if ( employeeObject ) {
             // Обновляем информацию о пользователе
             utils.editWithoutEventActions(employeeObject, [(NsmpConstants.USER_ID_CODE) : message.chat.id?.toString()])
-            telegram.Message.reply(message, "Привет, ${employeeObject?.title}, рад тебя видеть, теперь будем знакомы")
+            this.telegramConnector.Message.reply(message, "Привет, ${employeeObject?.title}, рад тебя видеть, теперь будем знакомы")
         } else {
-            telegram.Message.reply(message, """Привет, не видел тебя раньше, мне не разрешают знакомиться с незнакомыми людьми.
+            this.telegramConnector.Message.reply(message, """Привет, не видел тебя раньше, мне не разрешают знакомиться с незнакомыми людьми.
 Если ты хочешь, чтобы я тебя запомнил, то напиши в личку администратору бота, чтобы он добавил тебя в список пользователей.""")
         }
     }
@@ -112,14 +113,14 @@ class TelegramUpdateProcessor {
      * @param messageData Данные о сообщении
      */
     @SuppressWarnings("GrMethodMayBeStatic")
-    void processMessage(TelegramConnector telegram, TelegramDto.Message message) {
+    private void processMessage(TelegramDto.Message message) {
 
         /** Текущий чат */
         TelegramDto.Chat chat = message.chat
         /** Текст обрабатываемого сообщения (сразу в нижнем регистре) */
         String messageText = message.text?.toLowerCase() ?: null
         /** Информация о текущем боте */
-        TelegramDto.Bot me = telegram.getMe()
+        TelegramDto.Bot me = this.telegramConnector.getMe()
         ObjectWrapper objectWrapper = new ObjectWrapper()
 
         // Бота позвали в новую беседу или создали чат с ботом
@@ -127,14 +128,14 @@ class TelegramUpdateProcessor {
             String responseText = """Оп-па, а вот и новый чатик.
 Если вдруг кому-то нужно, вот текущий ChatID: <pre>${chat.id as String}</pre>"""
 
-            telegram.Message.send(chat, responseText)
+            this.telegramConnector.Message.send(chat, responseText)
         }
 
         // Обработка опроса
         else if (message.poll) {
             TelegramDto.Poll poll = message.poll
-            telegram.Message.send(chat, "Новый опрос это здорово, давайте тыкайте реще! ${poll.question}")
-            telegram.Message.send(chat, "ХЗ кто-как, лично я - ${poll.options[0].text}!")
+            this.telegramConnector.Message.send(chat, "Новый опрос это здорово, давайте тыкайте реще! ${poll.question}")
+            this.telegramConnector.Message.send(chat, "ХЗ кто-как, лично я - ${poll.options[0].text}!")
         }
 
         // Обработка текста сообщения
@@ -145,33 +146,31 @@ class TelegramUpdateProcessor {
 
                 // Обработка обращения к боту с вопросом выбрать случайного пользователя
                 if (messageText?.contains("кого следующим") || messageText?.contains("кто следующий")) {
-                    List<TelegramDto.User> allMembers = telegram.Chat.getMembers(chat, objectWrapper.getAllAccessUserAsLong())
+                    List<TelegramDto.User> allMembers = this.telegramConnector.Chat.getMembers(chat, objectWrapper.getAllAccessUserAsLong())
                     List<String> usernames = allMembers.collect { '@' + it.username }
                     usernames += 'хз'
 
-                    telegram.Message.reply(message, usernames[new Random().nextInt(usernames.size())])
+                    this.telegramConnector.Message.reply(message, usernames[new Random().nextInt(usernames.size())])
                 }
 
                 // Не обработанное обращение
                 else {
-                    telegram.Message.send(chat, 'Что звал то? Ничего не могу понять')
+                    this.telegramConnector.Message.send(chat, 'Что звал то? Ничего не могу понять')
                 }
             }
 
             // Обработка тега #Кричу
-            else if (messageText?.contains("#кричу")) telegram.Message.reply(message, 'Не кричи')
+            else if (messageText?.contains("#кричу")) this.telegramConnector.Message.reply(message, 'Не кричи')
 
             // Обработка точного совпадения текста сообщения
-            else if (messageText == 'привет') telegram.Message.send(chat, 'Ооо, здарова, брат')
+            else if (messageText == 'привет') this.telegramConnector.Message.send(chat, 'Ооо, здарова, брат')
 
             // Обработка сообщения "Знакомство"
-            else if (messageText == NsmpConstants.PAIR_MESSAGE.toLowerCase()) pairUser(message, telegram)
+            else if (messageText == NsmpConstants.PAIR_MESSAGE.toLowerCase()) pairUser(message)
         }
 
         // Не обработанное сообщение
-        else {
-            logger.info(message?.dump()?.toString())
-        }
+        else logger.info(message?.dump()?.toString())
 
     }
 
@@ -180,9 +179,15 @@ class TelegramUpdateProcessor {
      * @param callbackQuery Данные о callback'е
      */
     @SuppressWarnings("GrMethodMayBeStatic")
-    void processCallback(TelegramDto.Webhook.Update.CallbackQuery callbackQuery) {
+    private void processCallback(TelegramDto.Webhook.Update.CallbackQuery callbackQuery) {
         TelegramConnector telegram = new TelegramConnector()
 
         telegram.answerCallbackQuery(callbackQuery.id)
+    }
+
+    /** Процесс обработки обновления */
+    void processUpdate(TelegramDto.Webhook.Update update) {
+        if (update?.callbackQuery) processCallback(update.callbackQuery)
+        if (update?.message) processMessage(update.message)
     }
 }

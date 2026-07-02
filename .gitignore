@@ -24,3 +24,4 @@ out/
 !src/main/groovy/ru/nerilov/telegram/**
 
 !src/main/groovy/TelegramUpdateWebhook.groovy
+!src/main/groovy/TelegramUpdateLongPolling.groovy

@@ -1,0 +1,34 @@
+/*& 900 */
+
+/**
+ * Получение новых обновлений используя механизм Long Polling
+ * @author Erilov.NA
+ * @since 02.06.2026
+ * @contributions Erilov.NA
+ * @version 1.1.0
+ */
+
+import ru.nerilov.telegram.TelegramConnector
+import ru.nerilov.telegram.TelegramDto.Webhook.UpdateType
+import ru.nerilov.telegram.TelegramUpdateProcessor
+
+TelegramConnector telegram = new TelegramConnector()
+TelegramUpdateProcessor processor = new TelegramUpdateProcessor(telegram)
+
+Integer offset = api.keyValue.get('telegram', 'offset')
+
+// Удаление информации о созданном веб-хуке
+telegram.Webhook.delete()
+
+telegram.getUpdates(offset, 100, 30, [
+        UpdateType.CALLBACK_QUERY.value,
+        UpdateType.MESSAGE.value,
+        UpdateType.POLL.value,
+        UpdateType.POLL_ANSWER.value,
+        UpdateType.MESSAGE_REACTION.value
+]).each { update ->
+    processor.processUpdate(update)
+    offset = update.updateId + 1
+    api.keyValue.put('telegram', 'offset', value)
+}
+

@@ -8,7 +8,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA
  * @since 03.07.2025
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 import ru.nerilov.telegram.TelegramDto.Webhook.Update
@@ -20,15 +20,10 @@ import ru.nerilov.telegram.TelegramDto.Webhook.Update
 @SuppressWarnings(["GrMethodMayBeStatic", "unused"])
 String getWebhook(Map requestContent) {
     TelegramConnector telegram = new TelegramConnector()
-    TelegramUpdateProcessor processor = new TelegramUpdateProcessor()
+    TelegramUpdateProcessor processor = new TelegramUpdateProcessor(telegram)
 
-    Update update = telegram.objectMapper.readValue(
-            telegram.objectMapper.writeValueAsString(requestContent),
-            Update
-    )
+    Update update = telegram.objectMapper.readValue(telegram.objectMapper.writeValueAsString(requestContent), Update)
 
-    if (update?.callbackQuery) processor.processCallback(update.callbackQuery)
-    if (update?.message) processor.processMessage(telegram, update.message)
-
+    processor.processUpdate(update)
     return 'ok'
 }
