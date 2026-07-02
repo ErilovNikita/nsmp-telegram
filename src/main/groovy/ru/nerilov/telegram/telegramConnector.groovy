@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.46 *
+ * @version 2.5.47 *
  */
 
 /* Зависимости */
@@ -32,8 +32,6 @@ import org.springframework.web.util.UriComponentsBuilder
 
 import groovy.transform.VisibilityOptions
 import groovy.transform.options.Visibility
-import java.net.InetSocketAddress
-import java.net.Proxy
 
 import ru.naumen.core.shared.dto.ISDtObject
 import ru.naumen.core.server.script.api.injection.InjectApi
