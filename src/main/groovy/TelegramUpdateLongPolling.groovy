@@ -5,7 +5,7 @@
  * @author Erilov.NA
  * @since 02.06.2026
  * @contributions Erilov.NA
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 import ru.nerilov.telegram.TelegramConnector
@@ -15,11 +15,16 @@ import ru.nerilov.telegram.TelegramUpdateProcessor
 TelegramConnector telegram = new TelegramConnector()
 TelegramUpdateProcessor processor = new TelegramUpdateProcessor(telegram)
 
-Integer offset = api.keyValue.get('telegram', 'offset')
+// Отключаем планировщик по веб-хукам
+String webHookSchedulerCode = "TelegramUpdateWebhook"
+Object webHookSchedulerStatus = api.scheduler.getStatus('ExecuteScriptTask$' + webHookSchedulerCode) as Object
+webHookSchedulerStatus?.trigger?.collect{ it.code }?.each{ api.scheduler.disableTrigger(it) }
 
 // Удаление информации о созданном веб-хуке
 telegram.Webhook.delete()
 
+// Получение и обработка обновлений
+Integer offset = api.keyValue.get('telegram', 'offset') ?: 0
 telegram.getUpdates(offset, 100, 30, [
         UpdateType.CALLBACK_QUERY.value,
         UpdateType.MESSAGE.value,
