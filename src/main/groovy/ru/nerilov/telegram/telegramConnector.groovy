@@ -205,6 +205,30 @@ class TelegramConnector {
         )
     }
 
+    /**
+     * Получить входящие обновления с помощью Long Polling
+     *
+     * @return Массив объектов обновления
+     */
+    List<TelegramDto.Webhook.Update> getUpdates(
+        Integer offset = null,
+        Integer limit = 100,
+        Integer timeout = 30,
+        List<String> allowedUpdates = null
+    ) {
+        TelegramDto.BaseResponse response = Request.post("getUpdates", [
+                offset         : offset,
+                limit          : limit,
+                timeout        : timeout,
+                allowed_updates: allowedUpdates
+        ].findAll { it.value != null })
+
+        objectMapper.readValue(
+                objectMapper.writeValueAsString(response.result),
+                TelegramDto.Webhook.Update[]
+        )
+    }
+
     /** Класс взаимодействия c веб-хуками */
     class Webhook {
         /**
