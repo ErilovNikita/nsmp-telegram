@@ -6,7 +6,7 @@ package ru.nerilov.telegram
  * Содержит методы, которые формируют уникальные структурированные данные *
  * @author Erilov.NA*
  * @since 2025-07-03 *
- * @version 2.5.45 *
+ * @version 2.5.46 *
  */
 
 /* Зависимости */
@@ -219,6 +219,13 @@ class TelegramConnector {
                     objectMapper.writeValueAsString(response.result),
                     TelegramDto.Webhook
             )
+        }
+
+        /** Удаление текущего веб хука */
+        @VisibilityOptions(Visibility.PUBLIC)
+        @SuppressWarnings("unused")
+        void delete(Boolean dropPendingUpdates = false) {
+            Request.post("deleteWebhook", [drop_pending_updates : dropPendingUpdates])
         }
 
         /**
