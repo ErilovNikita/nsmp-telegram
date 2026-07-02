@@ -5,7 +5,7 @@
  * @author Erilov.NA
  * @since 02.06.2026
  * @contributions Erilov.NA
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 import ru.nerilov.telegram.TelegramConnector
@@ -23,26 +23,34 @@ webHookSchedulerStatus?.trigger?.collect{ it.code }?.each{ api.scheduler.disable
 // Удаление информации о созданном веб-хуке
 telegram.Webhook.delete()
 
+// Проверка выполнения процесса
 Integer offset = api.keyValue.get('telegram', 'offset') ?: 0
-Boolean longPollingHasLaunched = api.keyValue.get('telegram', 'longPollingHasLaunched') as Boolean ?: false
+Long lockTtlMs = 15 * 60000 // 15 минут
+Long currentTimestamp = System.currentTimeMillis()
+Object longPollingStartedAtValue = api.keyValue.get('telegram', 'longPollingStartedAt')
+Long longPollingStartedAt = longPollingStartedAtValue?.toString()?.isLong()
+        ? longPollingStartedAtValue.toString().toLong()
+        : null
 
-if (!longPollingHasLaunched) {
-    api.keyValue.put('telegram', 'longPollingHasLaunched', true)
+if (!longPollingStartedAt || currentTimestamp - longPollingStartedAt > lockTtlMs) {
+    api.keyValue.put('telegram', 'longPollingStartedAt', currentTimestamp)
 
-    // Получение и обработка обновлений
-    telegram.getUpdates(offset, 100, 30, [
-            UpdateType.CALLBACK_QUERY.value,
-            UpdateType.MESSAGE.value,
-            UpdateType.POLL.value,
-            UpdateType.POLL_ANSWER.value,
-            UpdateType.MESSAGE_REACTION.value
-    ]).each { update ->
-        processor.processUpdate(update)
-        offset = update.updateId + 1
-        api.keyValue.put('telegram', 'offset', value)
+    try {
+        // Получение и обработка обновлений
+        telegram.getUpdates(offset, 100, 30, [
+                UpdateType.CALLBACK_QUERY.value,
+                UpdateType.MESSAGE.value,
+                UpdateType.POLL.value,
+                UpdateType.POLL_ANSWER.value,
+                UpdateType.MESSAGE_REACTION.value
+        ]).each { update ->
+            processor.processUpdate(update)
+            offset = update.updateId + 1
+            api.keyValue.put('telegram', 'offset', offset)
+        }
+    } finally {
+        if (api.keyValue.get('telegram', 'longPollingStartedAt')?.toString() == currentTimestamp.toString()) api.keyValue.put('telegram', 'longPollingStartedAt', null)
     }
-
-    api.keyValue.put('telegram', 'longPollingHasLaunched', false)
 } else {
-    // просто с получения данных уже был запущен ранее
+    // Получение данных было запущено ранее, lock еще актуален
 }
