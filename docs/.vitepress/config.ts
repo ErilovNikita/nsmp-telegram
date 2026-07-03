@@ -4,7 +4,7 @@ export default defineConfig({
   title: 'NSMP Telegram',
   description: 'Интеграция Telegram с Naumen Service Desk',
   lang: 'ru-RU',
-  base: process.env.BASE_PATH ?? '/nsmp-telegram/',
+  base: '/nsmp-telegram/',
   cleanUrls: true,
   lastUpdated: true,
   themeConfig: {
