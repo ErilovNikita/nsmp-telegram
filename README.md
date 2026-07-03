@@ -21,13 +21,9 @@
 - общий обработчик update для обоих режимов.
 
 ## Документация
+[Открыть документацию](https://erilovnikita.github.io/nsmp-telegram/)
 
 Документация вынесена в VitePress и разложена по разделам в [`docs`](docs/index.md):
-
-- [Состав пакета](docs/guide/modules.md)
-- [Установка и настройка](docs/guide/installation.md)
-- [Режимы получения событий](docs/guide/update-modes.md)
-- [Примеры API](docs/api/index.md)
 
 ## Локальный запуск документации
 
