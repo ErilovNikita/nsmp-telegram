@@ -14,8 +14,14 @@ out/
 !.gitignore
 !LICENSE
 !README.md
+!package.json
+!.github/
+!.github/**
 !docs/
 !docs/**
+docs/.vitepress/dist/
+docs/.vitepress/.temp/
+docs/.vitepress/cache/
 
 !src/
 !src/main/
